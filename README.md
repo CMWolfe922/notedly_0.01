@@ -1,6 +1,6 @@
-<img src="cover.png" width="200" align="right" />
-
 # JavaScript Everywhere API
+
+<img src="cover.png" width="200" align="right"/>
 
 This repository contains code examples for the API chapters of [_JavaScript Everywhere_](https://www.jseverywhere.io/) by Adam D. Scott, published by O'Reilly Media
 
@@ -16,9 +16,9 @@ The best place to get help is our Spectrum channel, [spectrum.chat/jseverywhere]
 
 ## To Use the Final Project Files
 
-If you're developing a UI and would like to use the completed project, copy the files to the completed files to the `src` as follows: 
+If you're developing a UI and would like to use the completed project, copy the files to the completed files to the `src` as follows:
 
-```
+```sh
 cp -rf ./final/* ./src/
 ```
 
@@ -30,7 +30,7 @@ Each time this command is run, it will generate 10 users and 25 notes.
 
 ## Related Repositories
 
-- [Web 💻 ](https://github.com/javascripteverywhere/web)
+- [Web 💻](https://github.com/javascripteverywhere/web)
 - [Mobile 🤳](https://github.com/javascripteverywhere/mobile)
 - [Desktop 🖥️](https://github.com/javascripteverywhere/desktop)
 
@@ -49,3 +49,93 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
+
+# NOTES ON BUILDING A WEB APP WITH GRAPHQL
+
+> in order to be able to search for the API data I have to create a specific query in the GraphQL Playground:
+
+First I have to setup my code:
+
+```javascript
+// ================================================================= //
+// Create Notes:
+// ================================================================= //
+let notes = [
+  {
+    id: "1",
+    content: "This is a note",
+    author: "Adam Scott",
+  },
+  {
+    id: "2",
+    content: "This is another note",
+    author: "Harlow Everly",
+  },
+  {
+    id: "3",
+    content: "Oh hey look, another note!",
+    author: "Riley Harrison",
+  },
+];
+
+// =============================================================== //
+// Create a Schema using GraphQL Schema language:
+// =============================================================== //
+const typeDefs = gql`
+  type Note {
+    id: ID!
+    content: String!
+    author: String!
+  }
+
+  type Query {
+    hello: String!
+    notes: [Note!]!
+    note(id: ID): Note
+  }
+
+  type Mutation {
+    newNote(content: String!): Note
+  }
+`;
+
+// =============================================================== //
+// Create a resolver function for the schema language
+// =============================================================== //
+const resolvers = {
+  Query: {
+    hello: () => "Hello world!",
+    notes: () => notes,
+    note: (parent, args) => {
+      return notes.find((note) => note.id === args.id);
+    },
+  },
+  Mutation: {
+    newNote: (parent, args) => {
+      let noteValue = {
+        id: String(notes.length + 1),
+        content: args.content,
+        author: "Adam Scott",
+      };
+      notes.push(noteValue);
+      return noteValue;
+    },
+  },
+};
+```
+
+Now in order to search for those notes in the graphql playground online in the browser, I have to run a query using the keywords in the prebuilt schema:
+
+```graphql
+query {
+  notes {
+    id
+    content
+    author
+  }
+}
+```
+
+> That will allow for all of the notes to be rendered. But if I just wanted the content of the notes, I could remove the id and author from that query.

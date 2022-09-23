@@ -31,14 +31,14 @@ let notes = [
 // =============================================================== //
 const typeDefs = gql`
   type Note {
-    id: ID
-    content: String
-    author: String
+    id: ID!
+    content: String!
+    author: String!
   }
 
   type Query {
-    hello: String
-    notes: [Note]
+    hello: String!
+    notes: [Note!]!
     note(id: ID): Note
   }
 

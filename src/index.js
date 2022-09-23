@@ -63,7 +63,7 @@ const resolvers = {
             let noteValue = {
                 id: String(notes.length + 1),
                 content: args.content,
-                author: 'Adam Scott'
+                author: 'Charles Wolfe'
             };
             notes.push(noteValue);
             return noteValue;

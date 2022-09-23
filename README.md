@@ -139,3 +139,69 @@ query {
 ```
 
 > That will allow for all of the notes to be rendered. But if I just wanted the content of the notes, I could remove the id and author from that query.
+
+### Updating the GraphQL Query:
+
+> Its time to be able to query specfic notes that the users need. So in order to do that I willl add an argument to the schema. This will allow the user to pass specfic values to the resolvers functions.
+
+- Below I added a note query that takes an argument of id with the type ID. We'll update our `Query` object within our `typeDefs` to the following, which includes the new `note` query:
+
+```javascript
+type Query{
+    hello: String
+    notes: [Note!]!
+    note(id:ID!): Note!
+}
+```
+
+> And this is how you query for a specific ID
+
+```javascript
+query {
+  note(id:"1") {
+    id
+    content
+    author
+  }
+}
+```
+
+---
+
+#### Creating a new Note using GraphQL Mutations:
+
+To start I will wrap the initial API code by introducing the ability to create a new note using GraphQL's mutations. In that mutation the user will pass in the `notes contents` and for now the `author` will be hard coded.
+
+```javascript
+type Mutation {
+    newNote(content: String!): Note!
+}
+```
+
+> Now I need a mutation resolver that will do the following:
+
+1. Take in the note content as an argument
+2. store the note as an object; and
+3. add it in memory to our notes array
+
+So to do this I will add a mutation object to our resolvers. Within the mutation object I will add a function called newNote() with `parent` and `args` parameters. Within this function, we'll take the argument content and create an object with ID, content, and author keys.
+
+This would match the current schema of a note. NEXT I will then push the object to our notes array and return the object. Returning the object allows GraphQL mutation to receive a response in the intended format.
+
+```javascript
+Mutation: {
+  newNote: (parent, args) => {
+    let noteValue = {
+      id: String(notes.length + 1),
+      content: args.content,
+      author: "CMWolfe",
+    };
+    notes.push(noteValue);
+    return noteValue;
+  };
+}
+```
+
+#### Connecting MongoDB to my App:
+
+Now that we have some decent functionality we can connect to an actual database. So Create a file in `src/` called `db.js`

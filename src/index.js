@@ -11,7 +11,7 @@ const resolvers = require('./resolvers');
 // Run our server on a port specified in our .env file or port 4000
 // ================================================================= //
 const port = process.env.PORT || 4000;
-const DB_HOST = process.env.DB_HOST;
+const DB_HOST = process.env.TEST_DB; // THIS NEEDS TO BE CHANGED TO MAIN DATABASE AT SOME POINT
 
 // ============================================================== //
 // Create the app assignment and connect to the database:
@@ -26,10 +26,11 @@ db.connect(DB_HOST);
 const getUser = token => {
     if (token) {
         try {
-            // return user information from the token
+            // return the user information from the token
             return jwt.verify(token, process.env.JWT_SECRET);
         } catch (err) {
-            throw new Error('Session Invalid');
+            // if there's a problem with the token, throw an error
+            throw new Error('Session invalid');
         }
     }
 };

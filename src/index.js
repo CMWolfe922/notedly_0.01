@@ -1,6 +1,8 @@
 const express = require('express');
+const helmet = require('helmet');
 const { ApolloServer } = require('apollo-server-express');
 const jwt = require('jsonwebtoken');
+const cors = require('cors');
 require('dotenv').config();
 
 const db = require('./db');
@@ -17,6 +19,8 @@ const DB_HOST = process.env.TEST_DB; // THIS NEEDS TO BE CHANGED TO MAIN DATABAS
 // Create the app assignment and connect to the database:
 // ============================================================== //
 const app = express();
+app.use(helmet());
+app.use(cors());
 
 db.connect(DB_HOST);
 

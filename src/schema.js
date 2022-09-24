@@ -30,6 +30,7 @@ module.exports = gql`
     user(username: String!): User
     users: [User!]!
     me: User!
+    noteFeed:(cursor: String): NoteFeed
   }
 
   type Mutation {
@@ -39,5 +40,11 @@ module.exports = gql`
     toggleFavorite(id: ID!): Note!
     signUp(username: String!, email: String!, password: String!): String!
     signIn(username: String, email: String, password: String!): String!
+  }
+
+  type NoteFeed {
+    notes: [Note]!
+    cursor: String!
+    hasNextPage: Boolean!
   }
 `;

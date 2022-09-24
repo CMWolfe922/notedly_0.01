@@ -9,13 +9,26 @@ module.exports = gql`
     id: ID!
     content: String!
     author: String!
+    favoriteCount: Int!
+    FavoritedBy: [User!]
     createdAt: DateTime!
     updatedAt: DateTime!
+  }
+
+  type User {
+    id: ID!
+    username: String!
+    email: String!
+    avatar: String
+    notes: [Note!]!
+    favorites: [Note!]!
   }
 
   type Query {
     notes: [Note!]!
     note(id: ID!): Note!
+    user(username: String!): User
+    users:
   }
 
   type Mutation {

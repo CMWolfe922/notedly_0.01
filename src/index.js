@@ -1,5 +1,6 @@
 const express = require('express');
 const { ApolloServer } = require('apollo-server-express');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const db = require('./db');
@@ -12,10 +13,6 @@ const resolvers = require('./resolvers');
 const port = process.env.PORT || 4000;
 const DB_HOST = process.env.DB_HOST;
 
-// ================================================================== //
-// Setup the new mutation and resolver imports
-// ================================================================= //
-
 // ============================================================== //
 // Create the app assignment and connect to the database:
 // ============================================================== //
@@ -23,14 +20,34 @@ const app = express();
 
 db.connect(DB_HOST);
 
+// ================================================================== //
+// Get the user information from a JWT
+// ================================================================= //
+const getUser = token => {
+    if (token) {
+        try {
+            // return user information from the token
+            return jwt.verify(token, process.env.JWT_SECRET);
+        } catch (err) {
+            throw new Error('Session Invalid');
+        }
+    }
+};
 // ============================================================== //
 // Build the new Apollo Server:
 // ============================================================== //
 const server = new ApolloServer({
     typeDefs,
     resolvers,
-    context: () => {
-        return { models };
+    context: ({ req }) => {
+        // get the user token from the headers
+        const token = req.headers.authorization
+        // try to retrieve a user with a token
+        const user = getUser(token)
+        // for now, lets log the user to the console
+        console.log(user)
+        // add the db models and the user to the context
+        return { models, user };
     }
 });
 

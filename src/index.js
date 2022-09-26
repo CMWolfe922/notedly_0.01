@@ -1,32 +1,31 @@
 const express = require('express');
-const helmet = require('helmet');
 const { ApolloServer } = require('apollo-server-express');
 const jwt = require('jsonwebtoken');
+const helmet = require('helmet');
 const cors = require('cors');
+const depthLimit = require('graphql-depth-limit');
+const { createComplexityLimitRule } = require('graphql-validation-complexity');
 require('dotenv').config();
 
 const db = require('./db');
 const models = require('./models');
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
-// ================================================================== //
-// Run our server on a port specified in our .env file or port 4000
-// ================================================================= //
-const port = process.env.PORT || 4000;
-const DB_HOST = process.env.TEST_DB; // THIS NEEDS TO BE CHANGED TO MAIN DATABASE AT SOME POINT
 
-// ============================================================== //
-// Create the app assignment and connect to the database:
-// ============================================================== //
+// Run our server on a port specified in our .env file or port 4000
+const port = process.env.PORT || 4000;
+const DB_HOST = process.env.DB_HOST;
+
 const app = express();
-app.use(helmet());
-app.use(cors());
 
 db.connect(DB_HOST);
 
-// ================================================================== //
-// Get the user information from a JWT
-// ================================================================= //
+// Security middleware
+app.use(helmet());
+// CORS middleware
+app.use(cors());
+
+// get the user info from a JWT
 const getUser = token => {
     if (token) {
         try {
@@ -38,32 +37,26 @@ const getUser = token => {
         }
     }
 };
-// ============================================================== //
-// Build the new Apollo Server:
-// ============================================================== //
+
+// Apollo Server setup
+// updated to include `validationRules`
 const server = new ApolloServer({
     typeDefs,
     resolvers,
-    context: ({ req }) => {
+    validationRules: [depthLimit(5), createComplexityLimitRule(1000)],
+    context: async ({ req }) => {
         // get the user token from the headers
-        const token = req.headers.authorization
-        // try to retrieve a user with a token
-        const user = getUser(token)
-        // for now, lets log the user to the console
-        console.log(user)
+        const token = req.headers.authorization;
+        // try to retrieve a user with the token
+        const user = getUser(token);
         // add the db models and the user to the context
         return { models, user };
     }
 });
 
-// ============================================================== //
 // Apply the Apollo GraphQL middleware and set the path to /api
-// ============================================================== //
 server.applyMiddleware({ app, path: '/api' });
 
-// ============================================================== //
-// Build the app.listen  method:
-// ============================================================== //
 app.listen({ port }, () =>
     console.log(
         `GraphQL Server running at http://localhost:${port}${server.graphqlPath}`

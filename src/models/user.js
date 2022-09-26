@@ -14,15 +14,15 @@ const UserSchema = new mongoose.Schema(
         },
         password: {
             type: String,
-            required: true,
+            required: true
         },
         avatar: {
-            type: String,
+            type: String
         }
     },
     {
         // Assigns createdAt and updatedAt fields with a Date type
-        timestamps: true,
+        timestamps: true
     }
 );
 

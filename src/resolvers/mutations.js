@@ -1,76 +1,123 @@
-const { models } = require("mongoose");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const mongoose = require("mongoose");
-
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const {
     AuthenticationError,
     ForbiddenError
 } = require('apollo-server-express');
-
+const mongoose = require('mongoose');
 require('dotenv').config();
 
 const gravatar = require('../util/gravatar');
 
-// Now I can create my signup and login mutations for this
-// file. The mutation will accept a username, email address and password
-
-// I will normalize the username and email address by trimming all the whitespace
-// and converting it to all lowercase letters. Then I will encrypt
-// the users password using the bcryot module.
-
 module.exports = {
-
     newNote: async (parent, args, { models, user }) => {
-        // if there is no user on the context, throw an authentication error
         if (!user) {
-            throw new AuthenticationError("You muse be signed in to create a new note!")
+            throw new AuthenticationError('You must be signed in to create a note');
         }
+
         return await models.Note.create({
             content: args.content,
-            author: mongoose.Types.ObjectId(user.id)
+            author: mongoose.Types.ObjectId(user.id),
+            favoriteCount: 0
         });
     },
-
     deleteNote: async (parent, { id }, { models, user }) => {
-        // if there is no user on the context, throw an authentication error
+        // if not a user, throw an Authentication Error
         if (!user) {
-            throw new AuthenticationError("You must be signed in to delete a note!");
+            throw new AuthenticationError('You must be signed in to delete a note');
         }
-        // find the note:
+
+        // find the note
         const note = await models.Note.findById(id);
-        // if the note owner and current user dont match, throw a forbiddenError
+        // if the note owner and current user don't match, throw a forbidden error
         if (note && String(note.author) !== user.id) {
-            throw new ForbiddenError("You dont have permission to delete that note!");
+            throw new ForbiddenError("You don't have permissions to delete the note");
         }
+
         try {
-            // if everything else checks out ok, remove the note
+            // if everything checks out, remove the note
             await note.remove();
             return true;
         } catch (err) {
+            // if there's an error along the way, return false
             return false;
         }
     },
-
     updateNote: async (parent, { content, id }, { models, user }) => {
-        // if there is no user on the context, throw an authentication error
+        // if not a user, throw an Authentication Error
         if (!user) {
-            throw new AuthenticationError("You must be signed in to update notes!")
+            throw new AuthenticationError('You must be signed in to update a note');
         }
-        // find the note:
+
+        // find the note
         const note = await models.Note.findById(id);
-        // if the note owner and current user don't match, throw a ForbiddenError:
+        // if the note owner and current user don't match, throw a forbidden error
         if (note && String(note.author) !== user.id) {
-            throw new ForbiddenError("You don't have permission to update that note!")
+            throw new ForbiddenError("You don't have permissions to update the note");
         }
-        // Update the note in the database and return the updated note
+
+        // Update the note in the db and return the updated note
         return await models.Note.findOneAndUpdate(
-            { _id: id },
-            { $set: { content } },
-            { new: true }
+            {
+                _id: id
+            },
+            {
+                $set: {
+                    content
+                }
+            },
+            {
+                new: true
+            }
         );
     },
+    toggleFavorite: async (parent, { id }, { models, user }) => {
+        // if no user context is passed, throw auth error
+        if (!user) {
+            throw new AuthenticationError();
+        }
 
+        // check to see if the user has already favorited the note
+        let noteCheck = await models.Note.findById(id);
+        const hasUser = noteCheck.favoritedBy.indexOf(user.id);
+
+        // if the user exists in the list
+        // pull them from the list and reduce the favoriteCount by 1
+        if (hasUser >= 0) {
+            return await models.Note.findByIdAndUpdate(
+                id,
+                {
+                    $pull: {
+                        favoritedBy: mongoose.Types.ObjectId(user.id)
+                    },
+                    $inc: {
+                        favoriteCount: -1
+                    }
+                },
+                {
+                    // Set new to true to return the updated doc
+                    new: true
+                }
+            );
+        } else {
+            // if the user doesn't exists in the list
+            // add them to the list and increment the favoriteCount by 1
+            return await models.Note.findByIdAndUpdate(
+                id,
+                {
+                    $push: {
+                        favoritedBy: mongoose.Types.ObjectId(user.id)
+                    },
+                    $inc: {
+                        favoriteCount: 1
+                    }
+                },
+                {
+                    new: true
+                }
+            );
+        }
+    },
     signUp: async (parent, { username, email, password }, { models }) => {
         // normalize email address
         email = email.trim().toLowerCase();
@@ -85,11 +132,12 @@ module.exports = {
                 avatar,
                 password: hashed
             });
+
+            // create and return the json web token
             return jwt.sign({ id: user._id }, process.env.JWT_SECRET);
         } catch (err) {
-            console.log(err);
-            //  if theres a problem creating the account, throw an error
-            throw new Error('Error Creating Account..')
+            // if there's a problem creating the account, throw an error
+            throw new Error('Error creating account');
         }
     },
 
@@ -103,7 +151,7 @@ module.exports = {
             $or: [{ email }, { username }]
         });
 
-        //  if no user is found, throw an authentication error
+        // if no user is found, throw an authentication error
         if (!user) {
             throw new AuthenticationError('Error signing in');
         }
@@ -111,11 +159,10 @@ module.exports = {
         // if the passwords don't match, throw an authentication error
         const valid = await bcrypt.compare(password, user.password);
         if (!valid) {
-            throw new AuthenticationError('Incorrect Password');
+            throw new AuthenticationError('Error signing in');
         }
 
-        // Create and return the json web token
+        // create and return the json web token
         return jwt.sign({ id: user._id }, process.env.JWT_SECRET);
     }
-
-}
+};
